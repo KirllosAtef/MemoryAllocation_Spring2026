@@ -19,6 +19,14 @@ public class AddProcessController {
     private String procName;
     private final List<String[]> segments = new ArrayList<>();
 
+    public void initData(String name, List<String[]> existingSegments) {
+        tfName.setText(name);
+        rows.clear();
+        for (String[] seg : existingSegments) {
+            rows.add(new String[]{seg[0], seg[1]});
+        }
+    }
+
     @FXML
     public void initialize() {
         colSegSize.setText("Size (" + MainController.CURRENT_UNIT + ")");

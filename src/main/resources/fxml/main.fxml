@@ -146,8 +146,14 @@
             <!-- Add Process -->
             <VBox styleClass="control-section" spacing="6">
                 <Label text="PROCESSES" styleClass="section-label"/>
-                <Button fx:id="btnAddProc" text="＋ Add Process" maxWidth="Infinity"
-                        onAction="#onAddProcess" styleClass="btn-success"/>
+                <HBox spacing="4">
+                    <Button fx:id="btnAddProc" text="Add" maxWidth="Infinity" prefWidth="80" HBox.hgrow="ALWAYS"
+                            onAction="#onAddProcess" styleClass="btn-success"/>
+                    <Button text="Edit" maxWidth="Infinity" prefWidth="80" HBox.hgrow="ALWAYS"
+                            onAction="#onEditProcess" styleClass="btn-info"/>
+                    <Button text="Delete" maxWidth="Infinity" prefWidth="80" HBox.hgrow="ALWAYS"
+                            onAction="#onDeleteProcess" styleClass="btn-danger"/>
+                </HBox>
                 <ListView fx:id="processList" prefHeight="160" styleClass="process-list"/>
             </VBox>
 

@@ -20,6 +20,11 @@ public class InitMemoryController {
     private int totalSize;
     private final List<int[]> holes = new ArrayList<>();
 
+    // Keep state across instances
+    private static int lastTotalSize = 1024;
+    private static final List<String[]> lastRows = new ArrayList<>();
+    private static boolean hasInitialized = false;
+
     @FXML
     public void initialize() {
         lblTotalSize.setText("Total Memory Size (" + MainController.CURRENT_UNIT + "):");
@@ -30,14 +35,104 @@ public class InitMemoryController {
         holeStart.setCellValueFactory(cd -> new SimpleStringProperty(cd.getValue()[0]));
         holeSize .setCellValueFactory(cd -> new SimpleStringProperty(cd.getValue()[1]));
 
-        holeStart.setCellFactory(TextFieldTableCell.forTableColumn());
-        holeSize .setCellFactory(TextFieldTableCell.forTableColumn());
+        holeStart.setCellFactory(col -> createAutoCommitCell(0));
+        holeSize .setCellFactory(col -> createAutoCommitCell(1));
 
         holeStart.setOnEditCommit(e -> e.getRowValue()[0] = e.getNewValue());
         holeSize .setOnEditCommit(e -> e.getRowValue()[1] = e.getNewValue());
 
-        // Default example hole
-        rows.add(new String[]{"0", "1024"});
+        tfTotalSize.setText(String.valueOf(lastTotalSize));
+        if (hasInitialized) {
+            for (String[] r : lastRows) {
+                rows.add(new String[]{r[0], r[1]});
+            }
+        } else {
+            // Default example hole
+            rows.add(new String[]{"0", "1024"});
+        }
+    }
+
+    private TableCell<String[], String> createAutoCommitCell(int index) {
+        return new TableCell<String[], String>() {
+            private TextField textField;
+
+            @Override
+            public void startEdit() {
+                super.startEdit();
+                if (textField == null) {
+                    createTextField();
+                }
+                textField.setText(getString());
+                setGraphic(textField);
+                setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
+                javafx.application.Platform.runLater(() -> {
+                    textField.requestFocus();
+                    textField.selectAll();
+                });
+            }
+
+            @Override
+            public void cancelEdit() {
+                super.cancelEdit();
+                setText(getString());
+                setContentDisplay(ContentDisplay.TEXT_ONLY);
+            }
+
+            @Override
+            public void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty) {
+                    setText(null);
+                    setGraphic(null);
+                } else {
+                    if (isEditing()) {
+                        if (textField != null) {
+                            textField.setText(getString());
+                        }
+                        setGraphic(textField);
+                        setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
+                    } else {
+                        setText(getString());
+                        setContentDisplay(ContentDisplay.TEXT_ONLY);
+                    }
+                }
+            }
+
+            private void createTextField() {
+                textField = new TextField(getString());
+                textField.setMinWidth(this.getWidth() - this.getGraphicTextGap() * 2);
+
+                textField.focusedProperty().addListener((obs, wasFocused, isNowFocused) -> {
+                    if (!isNowFocused) {
+                        commitEdit(textField.getText());
+                    }
+                });
+
+                textField.textProperty().addListener((obs, oldVal, newVal) -> {
+                    TableRow<String[]> row = getTableRow();
+                    if (row != null) {
+                        String[] rowItem = row.getItem();
+                        if (rowItem != null) {
+                            rowItem[index] = newVal;
+                        }
+                    }
+                });
+
+                textField.setOnKeyPressed(t -> {
+                    if (t.getCode() == javafx.scene.input.KeyCode.ENTER) {
+                        commitEdit(textField.getText());
+                        t.consume();
+                    } else if (t.getCode() == javafx.scene.input.KeyCode.ESCAPE) {
+                        cancelEdit();
+                        t.consume();
+                    }
+                });
+            }
+
+            private String getString() {
+                return getItem() == null ? "" : getItem();
+            }
+        };
     }
 
     @FXML private void onAddHoleRow()    { rows.add(new String[]{"0", "0"}); }
@@ -67,6 +162,14 @@ public class InitMemoryController {
             }
         }
         if (holes.isEmpty()) holes.add(new int[]{0, totalSize});
+        
+        lastTotalSize = totalSize;
+        lastRows.clear();
+        for (String[] row : rows) {
+            lastRows.add(new String[]{row[0], row[1]});
+        }
+        hasInitialized = true;
+        
         confirmed = true;
         close();
     }

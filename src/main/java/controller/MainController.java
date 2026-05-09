@@ -71,6 +71,21 @@ public class MainController {
         cbUnit.setValue(CURRENT_UNIT);
         updateTableHeaders();
 
+        processList.setOnMouseClicked(event -> {
+            if (event.getClickCount() == 2) {
+                onEditProcess();
+            }
+        });
+
+        ContextMenu contextMenu = new ContextMenu();
+        MenuItem editItem = new MenuItem("Edit Process");
+        MenuItem deleteItem = new MenuItem("Delete Process");
+        
+        editItem.setOnAction(e -> onEditProcess());
+        deleteItem.setOnAction(e -> onDeleteProcess());
+        
+        processList.setContextMenu(contextMenu);
+
         appendLog("Welcome! Click 'Initialise Memory' to begin.");
         appendLog("Then add processes and allocate them.");
     }
@@ -147,11 +162,24 @@ public class MainController {
 
             if (!ctrl.isConfirmed()) return;
 
+            MemoryManager oldMm = mm;
             mm = new MemoryManager(ctrl.getTotalSize());
             paletteIdx = 0;
             for (int[] h : ctrl.getHoles()) {
                 try { mm.addInitialHole(h[0], h[1]); }
                 catch (IllegalArgumentException ex) { showError(ex.getMessage()); return; }
+            }
+
+            if (oldMm != null) {
+                for (model.Process oldP : oldMm.getProcesses().values()) {
+                    model.Process newP = new model.Process(oldP.getName());
+                    newP.setColor(oldP.getColor());
+                    for (Segment s : oldP.getSegments()) {
+                        newP.addSegment(new Segment(s.getName(), s.getSize()));
+                    }
+                    mm.addProcess(newP);
+                    paletteIdx++;
+                }
             }
 
             refreshAll();
@@ -205,6 +233,78 @@ public class MainController {
             appendLog("Process '" + name + "' added ("
                     + p.getSegments().size() + " segments, " + p.totalSize() + " " + CURRENT_UNIT + ").");
         } catch (Exception ex) { showError(ex.getMessage()); ex.printStackTrace(); }
+    }
+
+    @FXML private void onEditProcess() {
+        if (mm == null) return;
+        String sel = processList.getSelectionModel().getSelectedItem();
+        if (sel == null) return;
+        String name = sel.split(" ")[0];
+        model.Process p = mm.getProcesses().get(name);
+        if (p == null) return;
+        if (p.isAllocated()) {
+            showError("Cannot edit an allocated process. Deallocate it first.");
+            return;
+        }
+
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/addProcess.fxml"));
+            Parent root = loader.load();
+            AddProcessController ctrl = loader.getController();
+
+            List<String[]> segs = new ArrayList<>();
+            for (Segment s : p.getSegments()) {
+                segs.add(new String[]{s.getName(), String.valueOf(s.getSize())});
+            }
+            ctrl.initData(p.getName(), segs);
+
+            Stage dlg = new Stage();
+            dlg.initModality(Modality.APPLICATION_MODAL);
+            dlg.setTitle("Edit Process");
+            dlg.setScene(new Scene(root));
+            dlg.setResizable(false);
+            dlg.showAndWait();
+
+            if (!ctrl.isConfirmed()) return;
+            
+            String newName = ctrl.getProcName();
+            if (!newName.equals(p.getName()) && mm.processExists(newName)) {
+                showError("A process with the new name already exists.");
+                return;
+            }
+
+            mm.removeProcess(p.getName());
+            
+            model.Process newP = new model.Process(newName);
+            newP.setColor(p.getColor());
+            for (String[] sd : ctrl.getSegments()) {
+                newP.addSegment(new Segment(sd[0], Integer.parseInt(sd[1])));
+            }
+            mm.addProcess(newP);
+
+            refreshProcessList();
+            refreshSegProcessCombo();
+            appendLog("Process '" + p.getName() + "' edited" + (newName.equals(p.getName()) ? "." : " to '" + newName + "'."));
+        } catch (Exception ex) { showError(ex.getMessage()); ex.printStackTrace(); }
+    }
+
+    @FXML private void onDeleteProcess() {
+        if (mm == null) return;
+        String sel = processList.getSelectionModel().getSelectedItem();
+        if (sel == null) return;
+        String name = sel.split(" ")[0];
+        model.Process p = mm.getProcesses().get(name);
+        if (p == null) return;
+        
+        if (p.isAllocated()) {
+            showError("Cannot delete an allocated process. Deallocate it first.");
+            return;
+        }
+        
+        mm.removeProcess(name);
+        refreshProcessList();
+        refreshSegProcessCombo();
+        appendLog("Process '" + name + "' deleted.");
     }
 
     // ── Action: Allocate ───────────────────────────────────────────────────
@@ -261,7 +361,7 @@ public class MainController {
         if (mm == null) return;
         ObservableList<String> items = FXCollections.observableArrayList();
         for (model.Process p : mm.getProcesses().values())
-            items.add(p.getName() + (p.isAllocated() ? " [ALLOCATED]" : " [PENDING]"));
+            items.add(p.getName() + " [" + p.getState().name() + "]");
         processList.setItems(items);
     }
 

@@ -33,6 +33,7 @@ public class MemoryManager {
     // ── Processes ──────────────────────────────────────────────────────────
     public void addProcess(Process p)        { processes.put(p.getName(), p); }
     public boolean processExists(String n)   { return processes.containsKey(n); }
+    public void removeProcess(String n)      { processes.remove(n); }
     public Map<String, Process> getProcesses(){ return Collections.unmodifiableMap(processes); }
 
     // ── Allocate ───────────────────────────────────────────────────────────
@@ -103,6 +104,7 @@ public class MemoryManager {
         });
 
         proc.deallocateAll();
+        proc.setAllocated(false);
         mergeHoles();
         log.add("  Holes merged → " + freePartitions.size() + " hole(s) remain.");
         return log;
