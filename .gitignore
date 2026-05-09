@@ -1,0 +1,12 @@
+# IDEs and Editors
+.idea/
+.vscode/
+*.iml
+
+# Build folders
+target/
+dependency-reduced-pom.xml
+
+# User requested exclusions
+srcOld/
+INTELLIJ_SETUP.txt

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.geometry.*?>
+
+<VBox xmlns="http://javafx.com/javafx/11"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="controller.AddProcessController"
+      styleClass="dialog-root"
+      stylesheets="@../css/style.css"
+      spacing="14" prefWidth="420">
+
+    <Label text="Add New Process" styleClass="dialog-title"/>
+    <Separator/>
+
+    <!-- Process name -->
+    <GridPane hgap="12" vgap="8" styleClass="form-grid">
+        <Label text="Process Name:" GridPane.columnIndex="0" GridPane.rowIndex="0"
+               styleClass="form-label"/>
+        <TextField fx:id="tfName" text="P1" prefWidth="140"
+                   GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+    </GridPane>
+
+    <!-- Segments -->
+    <VBox spacing="6">
+        <Label text="Segments" styleClass="section-label"/>
+        <TableView fx:id="segTable" prefHeight="190" styleClass="data-table" editable="true">
+            <columns>
+                <TableColumn fx:id="colSegName" text="Segment Name" prefWidth="155" editable="true"/>
+                <TableColumn fx:id="colSegSize" text="Size (bytes)" prefWidth="155" editable="true"/>
+            </columns>
+            <placeholder><Label text="Add at least one segment"/></placeholder>
+        </TableView>
+        <HBox spacing="8">
+            <Button text="＋ Add Segment"  onAction="#onAddRow"    styleClass="btn-success btn-small"/>
+            <Button text="－ Remove"       onAction="#onRemoveRow" styleClass="btn-danger  btn-small"/>
+        </HBox>
+    </VBox>
+
+    <Separator/>
+
+    <HBox spacing="10" alignment="CENTER_RIGHT">
+        <Button text="Cancel"      onAction="#onCancel"     styleClass="btn-neutral"/>
+        <Button text="Add Process" onAction="#onAdd"        styleClass="btn-primary" defaultButton="true"/>
+    </HBox>
+
+    <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
+</VBox>
