@@ -4,7 +4,7 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.*;
 import javafx.fxml.*;
 import javafx.scene.control.*;
-import javafx.scene.control.cell.TextFieldTableCell;
+import util.EditCell;
 import javafx.stage.Stage;
 import java.util.*;
 
@@ -32,11 +32,13 @@ public class InitMemoryController {
         holesTable.setItems(rows);
         holesTable.setEditable(true);
 
+        holesTable.getSelectionModel().setCellSelectionEnabled(true);
+
         holeStart.setCellValueFactory(cd -> new SimpleStringProperty(cd.getValue()[0]));
         holeSize .setCellValueFactory(cd -> new SimpleStringProperty(cd.getValue()[1]));
 
-        holeStart.setCellFactory(col -> createAutoCommitCell(0));
-        holeSize .setCellFactory(col -> createAutoCommitCell(1));
+        holeStart.setCellFactory(util.EditCell.forTableColumn());
+        holeSize .setCellFactory(util.EditCell.forTableColumn());
 
         holeStart.setOnEditCommit(e -> e.getRowValue()[0] = e.getNewValue());
         holeSize .setOnEditCommit(e -> e.getRowValue()[1] = e.getNewValue());
@@ -52,88 +54,6 @@ public class InitMemoryController {
         }
     }
 
-    private TableCell<String[], String> createAutoCommitCell(int index) {
-        return new TableCell<String[], String>() {
-            private TextField textField;
-
-            @Override
-            public void startEdit() {
-                super.startEdit();
-                if (textField == null) {
-                    createTextField();
-                }
-                textField.setText(getString());
-                setGraphic(textField);
-                setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
-                javafx.application.Platform.runLater(() -> {
-                    textField.requestFocus();
-                    textField.selectAll();
-                });
-            }
-
-            @Override
-            public void cancelEdit() {
-                super.cancelEdit();
-                setText(getString());
-                setContentDisplay(ContentDisplay.TEXT_ONLY);
-            }
-
-            @Override
-            public void updateItem(String item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty) {
-                    setText(null);
-                    setGraphic(null);
-                } else {
-                    if (isEditing()) {
-                        if (textField != null) {
-                            textField.setText(getString());
-                        }
-                        setGraphic(textField);
-                        setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
-                    } else {
-                        setText(getString());
-                        setContentDisplay(ContentDisplay.TEXT_ONLY);
-                    }
-                }
-            }
-
-            private void createTextField() {
-                textField = new TextField(getString());
-                textField.setMinWidth(this.getWidth() - this.getGraphicTextGap() * 2);
-
-                textField.focusedProperty().addListener((obs, wasFocused, isNowFocused) -> {
-                    if (!isNowFocused) {
-                        commitEdit(textField.getText());
-                    }
-                });
-
-                textField.textProperty().addListener((obs, oldVal, newVal) -> {
-                    TableRow<String[]> row = getTableRow();
-                    if (row != null) {
-                        String[] rowItem = row.getItem();
-                        if (rowItem != null) {
-                            rowItem[index] = newVal;
-                        }
-                    }
-                });
-
-                textField.setOnKeyPressed(t -> {
-                    if (t.getCode() == javafx.scene.input.KeyCode.ENTER) {
-                        commitEdit(textField.getText());
-                        t.consume();
-                    } else if (t.getCode() == javafx.scene.input.KeyCode.ESCAPE) {
-                        cancelEdit();
-                        t.consume();
-                    }
-                });
-            }
-
-            private String getString() {
-                return getItem() == null ? "" : getItem();
-            }
-        };
-    }
 
     @FXML private void onAddHoleRow()    { rows.add(new String[]{"0", "0"}); }
     @FXML private void onRemoveHoleRow() {

@@ -5,12 +5,14 @@ import java.util.*;
 
 public class MemoryManager {
 
-    public enum Algorithm { FIRST_FIT, BEST_FIT }
+    public enum Algorithm {
+        FIRST_FIT, BEST_FIT
+    }
 
     private final int totalMemory;
-    private final ObservableList<MemoryPartition> freePartitions  = FXCollections.observableArrayList();
+    private final ObservableList<MemoryPartition> freePartitions = FXCollections.observableArrayList();
     private final ObservableList<MemoryPartition> allocPartitions = FXCollections.observableArrayList();
-    private final Map<String, Process>            processes       = new LinkedHashMap<>();
+    private final Map<String, Process> processes = new LinkedHashMap<>();
     private Algorithm algorithm = Algorithm.FIRST_FIT;
 
     public MemoryManager(int totalMemory) {
@@ -21,27 +23,50 @@ public class MemoryManager {
     public void addInitialHole(int start, int size) {
         if (start < 0 || start + size > totalMemory)
             throw new IllegalArgumentException(
-                "Hole [" + start + ", " + (start+size-1) + "] exceeds memory bounds (0-" + (totalMemory-1) + ")");
+                    "Hole [" + start + ", " + (start + size - 1) + "] exceeds memory bounds (0-" + (totalMemory - 1)
+                            + ")");
         freePartitions.add(new MemoryPartition(start, size));
         FXCollections.sort(freePartitions);
     }
 
     // ── Config ─────────────────────────────────────────────────────────────
-    public void setAlgorithm(Algorithm a) { algorithm = a; }
-    public Algorithm getAlgorithm()       { return algorithm; }
+    public void setAlgorithm(Algorithm a) {
+        algorithm = a;
+    }
+
+    public Algorithm getAlgorithm() {
+        return algorithm;
+    }
 
     // ── Processes ──────────────────────────────────────────────────────────
-    public void addProcess(Process p)        { processes.put(p.getName(), p); }
-    public boolean processExists(String n)   { return processes.containsKey(n); }
-    public void removeProcess(String n)      { processes.remove(n); }
-    public Map<String, Process> getProcesses(){ return Collections.unmodifiableMap(processes); }
+    public void addProcess(Process p) {
+        processes.put(p.getName(), p);
+    }
+
+    public boolean processExists(String n) {
+        return processes.containsKey(n);
+    }
+
+    public void removeProcess(String n) {
+        processes.remove(n);
+    }
+
+    public Map<String, Process> getProcesses() {
+        return Collections.unmodifiableMap(processes);
+    }
 
     // ── Allocate ───────────────────────────────────────────────────────────
     public List<String> allocate(String procName) {
         Process proc = processes.get(procName);
         List<String> log = new ArrayList<>();
-        if (proc == null) { log.add("ERROR: process not found"); return log; }
-        if (proc.isAllocated()) { log.add(procName + " is already allocated."); return log; }
+        if (proc == null) {
+            log.add("ERROR: process not found");
+            return log;
+        }
+        if (proc.isAllocated()) {
+            log.add(procName + " is already allocated.");
+            return log;
+        }
 
         log.add("Allocating " + procName + " [" + algorithm + "]");
 
@@ -58,7 +83,7 @@ public class MemoryManager {
                 return log;
             }
             MemoryPartition h = tentative.get(idx);
-            placements.add(new int[]{h.getStartAddress()});
+            placements.add(new int[] { h.getStartAddress() });
             if (h.getSize() == seg.getSize()) {
                 tentative.remove(idx);
             } else {
@@ -97,7 +122,8 @@ public class MemoryManager {
 
         allocPartitions.removeIf(ap -> {
             if (ap.getProcessName().equals(procName)) {
-                log.add(String.format("  freed [%d – %d] (%s)", ap.getStartAddress(), ap.getEndAddress(), ap.getSegmentName()));
+                log.add(String.format("  freed [%d – %d] (%s)", ap.getStartAddress(), ap.getEndAddress(),
+                        ap.getSegmentName()));
                 freePartitions.add(new MemoryPartition(ap.getStartAddress(), ap.getSize()));
                 return true;
             }
@@ -115,12 +141,16 @@ public class MemoryManager {
     private int findHole(List<MemoryPartition> holes, int size) {
         if (algorithm == Algorithm.FIRST_FIT) {
             for (int i = 0; i < holes.size(); i++)
-                if (holes.get(i).getSize() >= size) return i;
+                if (holes.get(i).getSize() >= size)
+                    return i;
         } else {
             int best = -1, bestSz = Integer.MAX_VALUE;
             for (int i = 0; i < holes.size(); i++) {
                 int hs = holes.get(i).getSize();
-                if (hs >= size && hs < bestSz) { best = i; bestSz = hs; }
+                if (hs >= size && hs < bestSz) {
+                    best = i;
+                    bestSz = hs;
+                }
             }
             return best;
         }
@@ -155,11 +185,25 @@ public class MemoryManager {
     }
 
     // ── Accessors ──────────────────────────────────────────────────────────
-    public int getTotalMemory()                                { return totalMemory; }
-    public ObservableList<MemoryPartition> getFreePartitions() { return freePartitions; }
-    public ObservableList<MemoryPartition> getAllocPartitions(){ return allocPartitions; }
-    public int getTotalFree()      { return freePartitions.stream().mapToInt(MemoryPartition::getSize).sum(); }
-    public int getTotalAllocated() { return allocPartitions.stream().mapToInt(MemoryPartition::getSize).sum(); }
+    public int getTotalMemory() {
+        return totalMemory;
+    }
+
+    public ObservableList<MemoryPartition> getFreePartitions() {
+        return freePartitions;
+    }
+
+    public ObservableList<MemoryPartition> getAllocPartitions() {
+        return allocPartitions;
+    }
+
+    public int getTotalFree() {
+        return freePartitions.stream().mapToInt(MemoryPartition::getSize).sum();
+    }
+
+    public int getTotalAllocated() {
+        return allocPartitions.stream().mapToInt(MemoryPartition::getSize).sum();
+    }
 
     public List<MemoryPartition> getAllSorted() {
         List<MemoryPartition> all = new ArrayList<>();
