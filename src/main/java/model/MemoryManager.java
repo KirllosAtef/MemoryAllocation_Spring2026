@@ -54,6 +54,7 @@ public class MemoryManager {
             if (idx == -1) {
                 log.add("  ✗ Segment '" + seg.getName() + "' (size=" + seg.getSize() + ") — no hole fits.");
                 log.add("  ✗ " + procName + " NOT allocated (all-or-nothing policy).");
+                proc.setState(Process.State.FAILED);
                 return log;
             }
             MemoryPartition h = tentative.get(idx);

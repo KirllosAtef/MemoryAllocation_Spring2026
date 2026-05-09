@@ -6,7 +6,7 @@ import javafx.scene.paint.Color;
 
 public class Process {
     private final StringProperty name = new SimpleStringProperty();
-    public enum State { PENDING, ALLOCATED, DEALLOCATED }
+    public enum State { PENDING, ALLOCATED, DEALLOCATED, FAILED }
     private final ObjectProperty<State> state = new SimpleObjectProperty<>(State.PENDING);
     private final ObservableList<Segment> segments = FXCollections.observableArrayList();
     private Color color = Color.CORNFLOWERBLUE;
@@ -52,6 +52,10 @@ public class Process {
 
     public void setAllocated(boolean b) {
         state.set(b ? State.ALLOCATED : State.DEALLOCATED);
+    }
+
+    public void setState(State s) {
+        state.set(s);
     }
 
     public ObservableList<Segment> getSegments() {

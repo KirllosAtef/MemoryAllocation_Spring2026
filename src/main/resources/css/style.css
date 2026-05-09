@@ -69,7 +69,7 @@
 .btn-success {
     -fx-background-color: #2E7D32; -fx-text-fill: white;
     -fx-font-weight: bold; -fx-cursor: hand;
-    -fx-background-radius: 6; -fx-padding: 8 14 8 14;
+    -fx-background-radius: 6; -fx-padding: 5 8 5 8;
 }
 .btn-success:hover { -fx-background-color: #388E3C; }
 
@@ -96,14 +96,14 @@
 
 .btn-danger {
     -fx-background-color: #C62828; -fx-text-fill: white;
-    -fx-background-radius: 6; -fx-cursor: hand;
-    -fx-padding: 5 10 5 10;
+    -fx-font-weight: bold; -fx-cursor: hand;
+    -fx-background-radius: 6; -fx-padding: 5 8 5 8;
 }
 
 .btn-info {
     -fx-background-color: #0277BD; -fx-text-fill: white;
-    -fx-background-radius: 6; -fx-cursor: hand;
-    -fx-padding: 5 10 5 10;
+    -fx-font-weight: bold; -fx-cursor: hand;
+    -fx-background-radius: 6; -fx-padding: 5 8 5 8;
 }
 
 .btn-small { -fx-font-size: 11px; -fx-padding: 4 10 4 10; -fx-background-radius: 4; }

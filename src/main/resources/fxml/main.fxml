@@ -28,7 +28,13 @@
     <!-- ══ LEFT: MEMORY DIAGRAM ══ -->
     <left>
         <VBox styleClass="panel" prefWidth="320" spacing="0">
-            <Label text="Memory Layout" styleClass="panel-header"/>
+            <HBox styleClass="panel-header" alignment="CENTER_LEFT">
+                <Label text="Memory Layout" style="-fx-font-weight: bold; -fx-text-fill: #1A1A2E;" />
+                <Region HBox.hgrow="ALWAYS"/>
+                <Button text="＋" onAction="#onZoomIn" style="-fx-padding: 2 6; -fx-font-size: 11px; -fx-cursor: hand;" />
+                <Region prefWidth="4" />
+                <Button text="－" onAction="#onZoomOut" style="-fx-padding: 2 6; -fx-font-size: 11px; -fx-cursor: hand;" />
+            </HBox>
             <Separator/>
             <ScrollPane fx:id="diagramScroll" fitToWidth="true" VBox.vgrow="ALWAYS"
                         styleClass="diagram-scroll" pannable="true">
@@ -147,11 +153,11 @@
             <VBox styleClass="control-section" spacing="6">
                 <Label text="PROCESSES" styleClass="section-label"/>
                 <HBox spacing="4">
-                    <Button fx:id="btnAddProc" text="Add" maxWidth="Infinity" prefWidth="80" HBox.hgrow="ALWAYS"
+                    <Button fx:id="btnAddProc" text="Add" maxWidth="Infinity" prefWidth="70" HBox.hgrow="ALWAYS"
                             onAction="#onAddProcess" styleClass="btn-success"/>
-                    <Button text="Edit" maxWidth="Infinity" prefWidth="80" HBox.hgrow="ALWAYS"
+                    <Button text="Edit" maxWidth="Infinity" prefWidth="70" HBox.hgrow="ALWAYS"
                             onAction="#onEditProcess" styleClass="btn-info"/>
-                    <Button text="Delete" maxWidth="Infinity" prefWidth="80" HBox.hgrow="ALWAYS"
+                    <Button text="Delete" maxWidth="Infinity" prefWidth="70" HBox.hgrow="ALWAYS"
                             onAction="#onDeleteProcess" styleClass="btn-danger"/>
                 </HBox>
                 <ListView fx:id="processList" prefHeight="160" styleClass="process-list"/>

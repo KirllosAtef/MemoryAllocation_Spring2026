@@ -373,6 +373,16 @@ public class MainController {
             cbSegProcess.setValue(prev);
     }
 
+    @FXML private void onZoomIn() {
+        diagram.zoomIn();
+        diagram.redraw(mm);
+    }
+
+    @FXML private void onZoomOut() {
+        diagram.zoomOut();
+        diagram.redraw(mm);
+    }
+
     // ── Utilities ──────────────────────────────────────────────────────────
     private void appendLog(String msg) {
         logArea.appendText(msg + "\n");
