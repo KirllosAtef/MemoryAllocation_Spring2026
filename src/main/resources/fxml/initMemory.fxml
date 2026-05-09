@@ -46,7 +46,7 @@
     <!-- Buttons -->
     <HBox spacing="10" alignment="CENTER_RIGHT">
         <Button text="Cancel" onAction="#onCancel" styleClass="btn-neutral"/>
-        <Button text="OK"     onAction="#onOk"     styleClass="btn-primary" defaultButton="true"/>
+        <Button text="OK"     onAction="#onOk"     styleClass="btn-primary"/>
     </HBox>
 
     <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>

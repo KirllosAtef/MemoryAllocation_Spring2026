@@ -42,7 +42,7 @@
 
     <HBox spacing="10" alignment="CENTER_RIGHT">
         <Button text="Cancel"      onAction="#onCancel"     styleClass="btn-neutral"/>
-        <Button text="Add Process" onAction="#onAdd"        styleClass="btn-primary" defaultButton="true"/>
+        <Button text="Add Process" onAction="#onAdd"        styleClass="btn-primary"/>
     </HBox>
 
     <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>

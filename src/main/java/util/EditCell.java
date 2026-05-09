@@ -4,6 +4,7 @@ import javafx.application.Platform;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
+import javafx.event.Event;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
 import javafx.util.Callback;
@@ -79,10 +80,14 @@ public class EditCell<S, T> extends TableCell<S, T> {
             }
         });
 
+        // Stop ActionEvent from bubbling up to default buttons
+        textField.setOnAction(Event::consume);
+
         // Handle Enter and Escape
         textField.setOnKeyPressed(t -> {
             if (t.getCode() == KeyCode.ENTER) {
                 commitEdit(converter.fromString(textField.getText()));
+                t.consume();
                 
                 // Move focus to next adjacent cell
                 Platform.runLater(() -> {
