@@ -21,35 +21,26 @@ import view.MemoryDiagramBuilder;
 import java.util.*;
 
 /**
- * Controller for main.fxml — the application root.
+ * Controller for main.fxml.
  *
- * MVC responsibilities:
- *   - Owns the single UnitConverter instance and propagates it to dialogs/view.
- *   - Translates user actions (button clicks) into model calls.
- *   - Reads model state and refreshes view components.
- *   - Zero business/algorithm logic lives here.
- *
- * SOLID:
- *   - SRP: UI wiring only; algorithms stay in model.algorithm.*
- *   - OCP: new strategies plug in without touching this class.
- *   - DIP: depends on AllocationStrategy interface, not concrete classes directly.
+ * Owns the single UnitConverter instance.
+ * Bridges UI events → model calls.
+ * Converts model byte values → display strings via UnitConverter.displayUnit.
+ * Passes raw bytes (from dialog controllers) straight to MemoryManager.
  */
 public class MainController {
 
-    // ── FXML fields ────────────────────────────────────────────────────────
+    // ── FXML ──────────────────────────────────────────────────────────────
     @FXML private Label    statusLabel;
     @FXML private Pane     diagramPane;
 
-    // Free-holes table
     @FXML private TableView<MemoryPartition>           freeTable;
     @FXML private TableColumn<MemoryPartition, Number> freeStart, freeEnd, freeSize;
 
-    // Allocated table
     @FXML private TableView<MemoryPartition>           allocTable;
     @FXML private TableColumn<MemoryPartition, String> allocProc, allocSeg;
     @FXML private TableColumn<MemoryPartition, Number> allocStart, allocEnd, allocSize;
 
-    // Segment table
     @FXML private ComboBox<String>             cbSegProcess;
     @FXML private TableView<Segment>           segTable;
     @FXML private TableColumn<Segment, Number> segNum, segBase, segSz, segLim;
@@ -58,17 +49,13 @@ public class MainController {
     @FXML private RadioButton      rbFirstFit, rbBestFit;
     @FXML private ListView<String> processList;
     @FXML private TextArea         logArea;
-    @FXML private ComboBox<Unit>   cbUnit;   // typed ComboBox<Unit> — no raw strings
+    @FXML private ComboBox<Unit>   cbUnit;   // display unit — independent of input unit
 
-    // ── Services & state ───────────────────────────────────────────────────
-    /** Single shared converter instance. Injected into every dialog and the diagram. */
-    private final UnitConverter units = UnitConverter.getInstance();
-
-    private MemoryManager        mm;
-    private MemoryDiagramBuilder diagram;
-
-    /** Logger lambda — passed to model; keeps log writing in the controller. */
-    private final SystemLogger logger = this::appendLog;
+    // ── Services ──────────────────────────────────────────────────────────
+    private final UnitConverter  units  = UnitConverter.getInstance();
+    private       MemoryManager  mm;
+    private       MemoryDiagramBuilder diagram;
+    private final SystemLogger   logger = this::appendLog;
 
     private static final Color[] PALETTE = {
         Color.web("#FF6B6B"), Color.web("#4ECDC4"), Color.web("#45B7D1"),
@@ -78,21 +65,18 @@ public class MainController {
     };
     private int paletteIdx = 0;
 
-    // ── Initialize ─────────────────────────────────────────────────────────
+    // ── Initialize ────────────────────────────────────────────────────────
     @FXML
     public void initialize() {
-        // Diagram gets the shared UnitConverter — no static field needed
         diagram = new MemoryDiagramBuilder(diagramPane, units);
 
         setupFreeTable();
         setupAllocTable();
         setupSegTable();
 
-        // Populate unit ComboBox with typed enum values
         cbUnit.setItems(FXCollections.observableArrayList(Unit.values()));
-        cbUnit.setValue(units.getUnit());
+        cbUnit.setValue(units.getDisplayUnit());
 
-        // Wire process list double-click → edit
         processList.setOnMouseClicked(e -> {
             if (e.getClickCount() == 2) onEditProcess();
         });
@@ -101,15 +85,15 @@ public class MainController {
         appendLog("Then add processes and allocate them.");
     }
 
-    // ── Unit changed ───────────────────────────────────────────────────────
+    // ── Display unit changed (main ComboBox) ───────────────────────────────
     @FXML private void onUnitChanged() {
-        units.setUnit(cbUnit.getValue());
+        units.setDisplayUnit(cbUnit.getValue());   // only display; input unit untouched
         updateTableHeaders();
         refreshAll();
     }
 
     private void updateTableHeaders() {
-        String lbl = units.label();
+        String lbl = units.label();                // displayUnit label
         freeSize .setText("Size (" + lbl + ")");
         allocSize.setText("Size (" + lbl + ")");
         segSz    .setText("Size (" + lbl + ")");
@@ -117,11 +101,30 @@ public class MainController {
             statusLabel.setText("● Memory: " + units.format(mm.getTotalMemory()));
     }
 
-    // ── Table cell factories ───────────────────────────────────────────────
+    // ── Table cell factories ──────────────────────────────────────────────
     private void setupFreeTable() {
         freeStart.setCellValueFactory(cd -> cd.getValue().startAddressProperty());
         freeEnd  .setCellValueFactory(cd -> new SimpleIntegerProperty(cd.getValue().getEndAddress()));
         freeSize .setCellValueFactory(cd -> cd.getValue().sizeProperty());
+
+        freeStart.setCellFactory(col -> new TableCell<>() {
+            @Override protected void updateItem(Number item, boolean empty) {
+                super.updateItem(item, empty);
+                setText((empty || item == null) ? null : units.formatAddress(item.longValue()));
+            }
+        });
+        freeEnd.setCellFactory(col -> new TableCell<>() {
+            @Override protected void updateItem(Number item, boolean empty) {
+                super.updateItem(item, empty);
+                setText((empty || item == null) ? null : units.formatAddress(item.longValue()));
+            }
+        });
+        freeSize.setCellFactory(col -> new TableCell<>() {
+            @Override protected void updateItem(Number item, boolean empty) {
+                super.updateItem(item, empty);
+                setText((empty || item == null) ? null : units.format(item.longValue()));
+            }
+        });
     }
 
     private void setupAllocTable() {
@@ -130,6 +133,25 @@ public class MainController {
         allocStart.setCellValueFactory(cd -> cd.getValue().startAddressProperty());
         allocEnd  .setCellValueFactory(cd -> new SimpleIntegerProperty(cd.getValue().getEndAddress()));
         allocSize .setCellValueFactory(cd -> cd.getValue().sizeProperty());
+
+        allocStart.setCellFactory(col -> new TableCell<>() {
+            @Override protected void updateItem(Number item, boolean empty) {
+                super.updateItem(item, empty);
+                setText((empty || item == null) ? null : units.formatAddress(item.longValue()));
+            }
+        });
+        allocEnd.setCellFactory(col -> new TableCell<>() {
+            @Override protected void updateItem(Number item, boolean empty) {
+                super.updateItem(item, empty);
+                setText((empty || item == null) ? null : units.formatAddress(item.longValue()));
+            }
+        });
+        allocSize.setCellFactory(col -> new TableCell<>() {
+            @Override protected void updateItem(Number item, boolean empty) {
+                super.updateItem(item, empty);
+                setText((empty || item == null) ? null : units.format(item.longValue()));
+            }
+        });
     }
 
     private void setupSegTable() {
@@ -144,14 +166,20 @@ public class MainController {
             @Override protected void updateItem(Number item, boolean empty) {
                 super.updateItem(item, empty);
                 if (empty || item == null) { setText(null); return; }
-                setText(item.intValue() == -1 ? "—" : item.toString());
+                setText(item.intValue() == -1 ? "—" : units.formatAddress(item.longValue()));
             }
         });
         segLim.setCellFactory(col -> new TableCell<>() {
             @Override protected void updateItem(Number item, boolean empty) {
                 super.updateItem(item, empty);
                 if (empty || item == null) { setText(null); return; }
-                setText(item.intValue() == -1 ? "—" : item.toString());
+                setText(item.intValue() == -1 ? "—" : units.formatAddress(item.longValue()));
+            }
+        });
+        segSz.setCellFactory(col -> new TableCell<>() {
+            @Override protected void updateItem(Number item, boolean empty) {
+                super.updateItem(item, empty);
+                setText((empty || item == null) ? null : units.format(item.longValue()));
             }
         });
     }
@@ -162,23 +190,36 @@ public class MainController {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/initMemory.fxml"));
             Parent root = loader.load();
             InitMemoryController ctrl = loader.getController();
-            ctrl.setUnitConverter(units);   // <-- inject shared converter
+            ctrl.setUnitConverter(units);
 
             Stage dlg = dialogStage("Initialise Memory", root);
             dlg.showAndWait();
             if (!ctrl.isConfirmed()) return;
 
-            MemoryManager oldMm = mm;
-            mm = new MemoryManager(ctrl.getTotalSize());
-            paletteIdx = 0;
-            for (int[] h : ctrl.getHoles()) {
-                try { mm.addInitialHole(h[0], h[1]); }
-                catch (IllegalArgumentException ex) { showError(ex.getMessage()); return; }
+            // Dialog returns raw bytes — no further conversion needed
+            long totalBytes = ctrl.getTotalSizeBytes();
+            if (totalBytes > Integer.MAX_VALUE) {
+                showError("Memory size exceeds " + Integer.MAX_VALUE + " bytes. Use a smaller value.");
+                return;
             }
 
-            // Preserve existing (unallocated) processes across re-init
+            MemoryManager oldMm = mm;
+            mm = new MemoryManager((int) totalBytes);
+            paletteIdx = 0;
+
+            for (long[] h : ctrl.getHoleBytes()) {
+                if (h[0] + h[1] > totalBytes) {
+                    showError("Hole starting at " + h[0] + " B with size " + h[1]
+                            + " B exceeds total memory.");
+                    return;
+                }
+                mm.addInitialHole((int) h[0], (int) h[1]);
+            }
+
+            // Preserve unallocated processes across re-init
             if (oldMm != null) {
                 for (model.Process oldP : oldMm.getProcesses().values()) {
+                    if (oldP.isAllocated()) continue;
                     model.Process newP = new model.Process(oldP.getName());
                     newP.setColor(oldP.getColor());
                     for (Segment s : oldP.getSegments())
@@ -193,18 +234,20 @@ public class MainController {
             statusLabel.getStyleClass().setAll("status-badge-ok");
             appendLog("──────────────────────────────");
             appendLog("Memory initialised: " + units.format(mm.getTotalMemory())
-                    + ", " + mm.getFreePartitions().size() + " hole(s).");
+                    + "  [input unit: " + units.getInputUnit().getLabel()
+                    + "  display unit: " + units.label() + "]");
+            appendLog(mm.getFreePartitions().size() + " initial hole(s).");
         } catch (Exception ex) { showError(ex.getMessage()); ex.printStackTrace(); }
     }
 
-    // ── Action: Add Process ────────────────────────────────────────────────
+    // ── Action: Add Process ───────────────────────────────────────────────
     @FXML private void onAddProcess() {
         if (mm == null) { showError("Initialise memory first."); return; }
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/addProcess.fxml"));
             Parent root = loader.load();
             AddProcessController ctrl = loader.getController();
-            ctrl.setUnitConverter(units);   // <-- inject
+            ctrl.setUnitConverter(units);
 
             Stage dlg = dialogStage("Add Process", root);
             dlg.showAndWait();
@@ -224,7 +267,7 @@ public class MainController {
         } catch (Exception ex) { showError(ex.getMessage()); ex.printStackTrace(); }
     }
 
-    // ── Action: Edit Process ───────────────────────────────────────────────
+    // ── Action: Edit Process ──────────────────────────────────────────────
     @FXML private void onEditProcess() {
         if (mm == null) return;
         String sel = processList.getSelectionModel().getSelectedItem();
@@ -232,7 +275,7 @@ public class MainController {
         String name = sel.split(" ")[0];
         model.Process p = mm.getProcesses().get(name);
         if (p == null) return;
-        if (p.isAllocated()) { showError("Cannot edit an allocated process. Deallocate it first."); return; }
+        if (p.isAllocated()) { showError("Deallocate '" + name + "' before editing."); return; }
 
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/addProcess.fxml"));
@@ -240,8 +283,10 @@ public class MainController {
             AddProcessController ctrl = loader.getController();
             ctrl.setUnitConverter(units);
 
+            // Pass raw bytes — initData converts to inputUnit for display
             List<String[]> segs = new ArrayList<>();
-            for (Segment s : p.getSegments()) segs.add(new String[]{s.getName(), String.valueOf(s.getSize())});
+            for (Segment s : p.getSegments())
+                segs.add(new String[]{s.getName(), String.valueOf(s.getSize())});
             ctrl.initData(p.getName(), segs);
 
             Stage dlg = dialogStage("Edit Process", root);
@@ -250,7 +295,7 @@ public class MainController {
 
             String newName = ctrl.getProcName();
             if (!newName.equals(p.getName()) && mm.processExists(newName)) {
-                showError("A process with the new name already exists."); return;
+                showError("A process named '" + newName + "' already exists."); return;
             }
 
             mm.removeProcess(p.getName());
@@ -265,7 +310,7 @@ public class MainController {
         } catch (Exception ex) { showError(ex.getMessage()); ex.printStackTrace(); }
     }
 
-    // ── Action: Delete Process ─────────────────────────────────────────────
+    // ── Action: Delete Process ────────────────────────────────────────────
     @FXML private void onDeleteProcess() {
         if (mm == null) return;
         String sel = processList.getSelectionModel().getSelectedItem();
@@ -273,14 +318,14 @@ public class MainController {
         String name = sel.split(" ")[0];
         model.Process p = mm.getProcesses().get(name);
         if (p == null) return;
-        if (p.isAllocated()) { showError("Cannot delete an allocated process. Deallocate it first."); return; }
+        if (p.isAllocated()) { showError("Deallocate '" + name + "' before deleting."); return; }
         mm.removeProcess(name);
         refreshProcessList();
         refreshSegProcessCombo();
         appendLog("Process '" + name + "' deleted.");
     }
 
-    // ── Action: Allocate ───────────────────────────────────────────────────
+    // ── Action: Allocate ──────────────────────────────────────────────────
     @FXML private void onAllocate() {
         String sel = processList.getSelectionModel().getSelectedItem();
         if (sel == null) { showError("Select a process first."); return; }
@@ -290,7 +335,7 @@ public class MainController {
         refreshAll();
     }
 
-    // ── Action: Deallocate ─────────────────────────────────────────────────
+    // ── Action: Deallocate ────────────────────────────────────────────────
     @FXML private void onDeallocate() {
         String sel = processList.getSelectionModel().getSelectedItem();
         if (sel == null) { showError("Select a process first."); return; }
@@ -299,8 +344,8 @@ public class MainController {
         refreshAll();
     }
 
-    // ── Action: Show Segment Table ─────────────────────────────────────────
-    @FXML private void onSegProcessSelected() { /* handled by show button */ }
+    // ── Segment table ─────────────────────────────────────────────────────
+    @FXML private void onSegProcessSelected() { /* trigger via Show button */ }
 
     @FXML private void onShowSegTable() {
         if (mm == null) return;
@@ -310,18 +355,24 @@ public class MainController {
         if (p != null) segTable.setItems(p.getSegments());
     }
 
-    // ── Action: Zoom ───────────────────────────────────────────────────────
+    // ── Zoom ──────────────────────────────────────────────────────────────
     @FXML private void onZoomIn()  { diagram.zoomIn();  diagram.redraw(mm); }
     @FXML private void onZoomOut() { diagram.zoomOut(); diagram.redraw(mm); }
 
-    // ── Action: Clear log ──────────────────────────────────────────────────
+    // ── Log ───────────────────────────────────────────────────────────────
     @FXML private void onClearLog() { logArea.clear(); }
 
-    // ── Refresh helpers ────────────────────────────────────────────────────
+    // ── Refresh ───────────────────────────────────────────────────────────
     private void refreshAll() {
         if (mm == null) return;
         freeTable .setItems(mm.getFreePartitions());
         allocTable.setItems(mm.getAllocPartitions());
+        
+        // Force visual refresh of all table cells to reflect new units
+        freeTable.refresh();
+        allocTable.refresh();
+        segTable.refresh();
+
         updateTableHeaders();
         diagram.redraw(mm);
         refreshProcessList();
@@ -344,13 +395,21 @@ public class MainController {
             cbSegProcess.setValue(prev);
     }
 
-    // ── Utilities ──────────────────────────────────────────────────────────
+    // ── Utilities ─────────────────────────────────────────────────────────
+
+    /**
+     * Build a Process from the segment list returned by AddProcessController.
+     * segsData[i] = [name, rawBytesAsString]  (already validated & converted).
+     */
     private model.Process buildProcess(String name, List<String[]> segsData) {
         model.Process p = new model.Process(name);
         p.setColor(PALETTE[paletteIdx % PALETTE.length]);
         paletteIdx++;
-        for (String[] sd : segsData)
-            p.addSegment(new Segment(sd[0], Integer.parseInt(sd[1])));
+        for (String[] sd : segsData) {
+            // sd[1] is raw bytes (from AddProcessController.onAdd)
+            int bytes = (int) Long.parseLong(sd[1]);
+            p.addSegment(new Segment(sd[0], bytes));
+        }
         return p;
     }
 
@@ -366,6 +425,8 @@ public class MainController {
     private void appendLog(String msg) { logArea.appendText(msg + "\n"); }
 
     private void showError(String msg) {
-        new Alert(Alert.AlertType.ERROR, msg, ButtonType.OK).showAndWait();
+        Alert a = new Alert(Alert.AlertType.ERROR, msg, ButtonType.OK);
+        a.setHeaderText("Error");
+        a.showAndWait();
     }
 }

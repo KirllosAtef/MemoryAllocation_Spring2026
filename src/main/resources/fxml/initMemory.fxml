@@ -9,44 +9,46 @@
       fx:controller="controller.InitMemoryController"
       styleClass="dialog-root"
       stylesheets="@../css/style.css"
-      spacing="14" prefWidth="420">
+      spacing="14" prefWidth="460">
 
     <Label text="Initialise Memory" styleClass="dialog-title"/>
     <Separator/>
 
-    <!-- Total size & Unit -->
-    <GridPane hgap="12" vgap="8" styleClass="form-grid">
-        <Label fx:id="lblTotalSize" text="Total Memory Size:" GridPane.columnIndex="0" GridPane.rowIndex="0"
-               styleClass="form-label"/>
-        <TextField fx:id="tfTotalSize" text="1024" prefWidth="140"
-                   GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+    <GridPane hgap="12" vgap="10" styleClass="form-grid">
 
-        <Label text="Unit:" GridPane.columnIndex="0" GridPane.rowIndex="1" styleClass="form-label"/>
-        <ComboBox fx:id="cbUnit" onAction="#onUnitChanged" prefWidth="100" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+        <Label text="Input Unit:" styleClass="form-label"
+               GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+        <ComboBox fx:id="cbInputUnit"
+                  GridPane.columnIndex="1" GridPane.rowIndex="0"
+                  prefWidth="140"/>
+        <Label text="(unit for sizes you type below)"
+               styleClass="hint-label"
+               GridPane.columnIndex="2" GridPane.rowIndex="0"/>
+
+        <Label fx:id="lblTotalSize" text="Total Memory Size:" styleClass="form-label"
+               GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+        <TextField fx:id="tfTotalSize" text="1024" prefWidth="140"
+                   GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+
     </GridPane>
 
-    <!-- Holes table -->
     <VBox spacing="6">
         <Label text="Initial Free Holes" styleClass="section-label"/>
         <TableView fx:id="holesTable" prefHeight="180" styleClass="data-table" editable="true">
             <columns>
-                <TableColumn fx:id="holeStart" text="Start Address" prefWidth="160" editable="true"/>
-                <TableColumn fx:id="holeSize"  text="Size (bytes)"  prefWidth="160" editable="true"/>
+                <TableColumn fx:id="holeStart" text="Start" prefWidth="155" editable="true"/>
+                <TableColumn fx:id="holeSize"  text="Size"  prefWidth="155" editable="true"/>
             </columns>
             <placeholder><Label text="No holes — whole memory will be one free block"/></placeholder>
         </TableView>
         <HBox spacing="8">
-            <Button text="＋ Add Hole"    onAction="#onAddHoleRow"    styleClass="btn-success btn-small"/>
-            <Button text="－ Remove Row"  onAction="#onRemoveHoleRow" styleClass="btn-danger  btn-small"/>
+            <Button text="＋ Add Hole"   onAction="#onAddHoleRow"    styleClass="btn-success btn-small"/>
+            <Button text="－ Remove Row" onAction="#onRemoveHoleRow" styleClass="btn-danger  btn-small"/>
         </HBox>
     </VBox>
 
-    <Label text="Tip: Leave the table empty to treat the entire memory as one free hole."
-           styleClass="hint-label" wrapText="true"/>
-
     <Separator/>
 
-    <!-- Buttons -->
     <HBox spacing="10" alignment="CENTER_RIGHT">
         <Button text="Cancel" onAction="#onCancel" styleClass="btn-neutral"/>
         <Button text="OK"     onAction="#onOk"     styleClass="btn-primary"/>

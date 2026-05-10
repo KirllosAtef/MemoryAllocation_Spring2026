@@ -1,81 +1,91 @@
 package model.service;
 
 /**
- * Converts raw byte values to/from the user-selected display unit.
- *
- * SRP: only responsible for unit math and formatting.
- * All classes that need to display sizes receive this service via constructor
- * or setter — nothing reads a static field anymore.
+ * Converts raw byte values to/from the user-selected units.
  */
 public class UnitConverter {
-
     public enum Unit {
-        B  ("B",   1L),
-        KB ("KB",  1_024L),
-        MB ("MB",  1_024L * 1_024),
-        GB ("GB",  1_024L * 1_024 * 1_024);
+        B("B", 1L, 0),
+        KB("KB", 1_024L, 0),   // Round down to whole KB as per "0 to 49KB"
+        MB("MB", 1_024L * 1_024, 3), // Round down to 3 decimals as per "0 to 0.048"
+        GB("GB", 1_024L * 1_024 * 1_024, 3);
 
         private final String label;
-        private final long   factor;
+        private final long factor;
+        private final int precision;
 
-        Unit(String label, long factor) {
-            this.label  = label;
+        Unit(String label, long factor, int precision) {
+            this.label = label;
             this.factor = factor;
+            this.precision = precision;
         }
 
         public String getLabel() { return label; }
-        public long   getFactor(){ return factor; }
+        public long getFactor() { return factor; }
+        public int getPrecision() { return precision; }
 
         @Override public String toString() { return label; }
     }
 
-    private Unit current = Unit.B;
-
-    // ── Singleton-style shared instance ────────────────────────────────────
-    // Controllers pass this one instance around so unit changes propagate
-    // everywhere without static coupling.
     private static final UnitConverter INSTANCE = new UnitConverter();
     public static UnitConverter getInstance() { return INSTANCE; }
 
-    /** Change the active unit. All subsequent format/convert calls use it. */
-    public void setUnit(Unit u) { this.current = u; }
+    private Unit inputUnit = Unit.B;
+    private Unit displayUnit = Unit.B;
 
-    public Unit getUnit() { return current; }
+    public void setInputUnit(Unit u) { this.inputUnit = u; }
+    public Unit getInputUnit() { return inputUnit; }
+    public String inputLabel() { return inputUnit.getLabel(); }
 
-    // ── Conversion ─────────────────────────────────────────────────────────
+    public long parse(String raw) {
+        double d;
+        try {
+            d = Double.parseDouble(raw.trim());
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("\"" + raw + "\" is not a valid number.");
+        }
+        if (d <= 0) throw new IllegalArgumentException("Size must be positive.");
 
-    /** Format a raw byte count for display in the current unit. */
+        long bytes = (long) (d * inputUnit.getFactor());
+        if (bytes <= 0) throw new IllegalArgumentException("Value too small for selected unit.");
+        return bytes;
+    }
+
+    public void setDisplayUnit(Unit u) { this.displayUnit = u; }
+    public Unit getDisplayUnit() { return displayUnit; }
+    public String label() { return displayUnit.getLabel(); }
+
+    /**
+     * Formats a size value (rounded to nearest precision).
+     */
     public String format(long bytes) {
-        if (current == Unit.B) return bytes + " B";
-        double val = (double) bytes / current.getFactor();
-        if (val == Math.floor(val)) return (long) val + " " + current.getLabel();
-        return trimZeros(String.format("%.3f", val)) + " " + current.getLabel();
+        double val = (double) bytes / displayUnit.getFactor();
+        return trimZeros(formatWithPrecision(val, displayUnit.getPrecision())) + " " + displayUnit.getLabel();
     }
 
-    /** Same as format() but returns just the number string without the unit label. */
+    /**
+     * Formats an address (Start or End) - always rounds DOWN to the nearest precision step.
+     */
+    public String formatAddress(long bytes) {
+        double val = (double) bytes / displayUnit.getFactor();
+        int p = displayUnit.getPrecision();
+        double factor = Math.pow(10, p);
+        double roundedDown = Math.floor(val * factor) / factor;
+        return trimZeros(formatWithPrecision(roundedDown, p));
+    }
+
     public String formatValue(long bytes) {
-        if (current == Unit.B) return String.valueOf(bytes);
-        double val = (double) bytes / current.getFactor();
-        if (val == Math.floor(val)) return String.valueOf((long) val);
-        return trimZeros(String.format("%.4f", val));
+        double val = (double) bytes / displayUnit.getFactor();
+        return trimZeros(formatWithPrecision(val, displayUnit.getPrecision()));
     }
 
-    /** Parse a user-entered value in the current unit → bytes. */
-    public long toBytes(double userValue) {
-        return Math.round(userValue * current.getFactor());
+    private String formatWithPrecision(double val, int precision) {
+        return String.format("%." + precision + "f", val);
     }
-
-    /** Convert bytes → current unit as a double (for pre-populating input fields). */
-    public double fromBytes(long bytes) {
-        return (double) bytes / current.getFactor();
-    }
-
-    /** Current unit label string, e.g. "KB". */
-    public String label() { return current.getLabel(); }
-
-    // ── Helpers ────────────────────────────────────────────────────────────
 
     private static String trimZeros(String s) {
-        return s.replaceAll("0+$", "").replaceAll("\\.$", "");
+        if (!s.contains(".")) return s;
+        s = s.replaceAll("0+$", "").replaceAll("\\.$", "");
+        return s;
     }
 }

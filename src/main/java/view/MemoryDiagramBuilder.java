@@ -168,9 +168,9 @@ public class MemoryDiagramBuilder {
         }
         gc.setFill(Color.web("#334155"));
         gc.setFont(Font.font("Monospaced", FontWeight.BOLD, 11));
-        String s = String.valueOf(startAddr);
+        String s = units.formatAddress(startAddr);
         gc.fillText(s, barX - 8 - approxW(s, 11), y + 10);
-        String e = String.valueOf(endAddr);
+        String e = units.formatAddress(endAddr);
         gc.setFill(Color.web("#475569"));
         gc.fillText(e, barX + BAR_W + 6, Math.max(y + 10, y + h - 2));
         gc.setStroke(Color.web("#CBD5E1")); gc.setLineWidth(1);
