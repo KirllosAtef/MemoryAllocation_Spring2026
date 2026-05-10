@@ -58,7 +58,7 @@ src/main/resources
    The executable JAR will be located in the `target/` directory with the `-fat` suffix.
 
 ## 📸 Screenshots
-*(Add your screenshots here to show off the beautiful UI!)*
+![Application UI](ui.png)
 
 ---
 *Developed as part of the Operating Systems course - Spring 2026.*
