@@ -2,7 +2,7 @@
 
 A JavaFX-based desktop application that simulates memory management using common dynamic partitioning strategies. This project provides a visual representation of how memory is allocated and deallocated for processes with multiple segments.
 
-## 🚀 Features
+## Features
 
 - **Allocation Algorithms**: 
   - **First Fit**: Allocates the first hole that is big enough.
@@ -17,13 +17,13 @@ A JavaFX-based desktop application that simulates memory management using common
 - **Visual Memory Map**: Real-time visualization of the memory layout, showing allocated segments and free holes.
 - **Detailed Logs**: Step-by-step logging of allocation attempts and memory state changes.
 
-## 🛠️ Technologies Used
+## Technologies Used
 
 - **Java 17**
 - **JavaFX 21** (for the Graphical User Interface)
 - **Maven** (for dependency management and build automation)
 
-## 📦 Project Structure
+## Project Structure
 
 ```text
 src/main/java
@@ -35,7 +35,7 @@ src/main/resources
 └── css           # Styling for the application
 ```
 
-## 🚀 How to Run
+## How to Run
 
 ### Prerequisites
 - JDK 17 or higher
@@ -57,7 +57,7 @@ src/main/resources
    ```
    The executable JAR will be located in the `target/` directory with the `-fat` suffix.
 
-## 📸 Screenshots
+## Screenshots
 ![Application UI](ui.png)
 
 ---
