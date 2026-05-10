@@ -64,6 +64,7 @@ public class MainController {
         Color.web("#FF9F43"), Color.web("#EE5A24"), Color.web("#009432"),
     };
     private int paletteIdx = 0;
+    private int processCounter = 1;
 
     // ── Initialize ────────────────────────────────────────────────────────
     @FXML
@@ -218,6 +219,7 @@ public class MainController {
 
             // Preserve all processes across re-init (reset to PENDING)
             if (oldMm != null) {
+                int maxIdx = 0;
                 for (model.Process oldP : oldMm.getProcesses().values()) {
                     model.Process newP = new model.Process(oldP.getName());
                     newP.setColor(oldP.getColor());
@@ -225,7 +227,16 @@ public class MainController {
                         newP.addSegment(new Segment(s.getName(), s.getSize()));
                     mm.addProcess(newP);
                     paletteIdx++;
+
+                    // Update name counter
+                    try {
+                        if (oldP.getName().startsWith("P")) {
+                            int idx = Integer.parseInt(oldP.getName().substring(1));
+                            maxIdx = Math.max(maxIdx, idx);
+                        }
+                    } catch (Exception ignored) {}
                 }
+                processCounter = maxIdx + 1;
             }
 
             refreshAll();
@@ -248,6 +259,9 @@ public class MainController {
             AddProcessController ctrl = loader.getController();
             ctrl.setUnitConverter(units);
 
+            // Suggest name, but pass null for segments to keep defaults
+            ctrl.initData("P" + processCounter, null);
+
             Stage dlg = dialogStage("Add Process", root);
             dlg.showAndWait();
             if (!ctrl.isConfirmed()) return;
@@ -257,6 +271,10 @@ public class MainController {
 
             model.Process p = buildProcess(name, ctrl.getSegments());
             mm.addProcess(p);
+
+            // Increment counter only if name was the suggested one or similar? 
+            // Better to just increment to stay ahead.
+            processCounter++;
 
             refreshProcessList();
             refreshSegProcessCombo();

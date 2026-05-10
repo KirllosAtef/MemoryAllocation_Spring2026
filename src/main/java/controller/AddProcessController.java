@@ -31,17 +31,20 @@ public class AddProcessController {
     public void initData(String name, List<String[]> existingSegments) {
         if (tfName != null)
             tfName.setText(name);
-        rows.clear();
-        for (String[] seg : existingSegments) {
-            String displaySize = seg[1];
-            if (units != null) {
-                try {
-                    long bytes = Long.parseLong(seg[1]);
-                    displaySize = String.valueOf((double) bytes / units.getInputUnit().getFactor());
-                } catch (NumberFormatException ignored) {
+            
+        if (existingSegments != null) {
+            rows.clear();
+            for (String[] seg : existingSegments) {
+                String displaySize = seg[1];
+                if (units != null) {
+                    try {
+                        long bytes = Long.parseLong(seg[1]);
+                        displaySize = String.valueOf((double) bytes / units.getInputUnit().getFactor());
+                    } catch (NumberFormatException ignored) {
+                    }
                 }
+                rows.add(new String[] { seg[0], displaySize });
             }
-            rows.add(new String[] { seg[0], displaySize });
         }
     }
 

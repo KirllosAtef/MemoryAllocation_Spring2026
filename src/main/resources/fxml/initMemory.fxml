@@ -28,6 +28,7 @@
         <Label fx:id="lblTotalSize" text="Total Memory Size:" styleClass="form-label"
                GridPane.columnIndex="0" GridPane.rowIndex="1"/>
         <TextField fx:id="tfTotalSize" text="1024" prefWidth="140"
+                   onAction="#onOk"
                    GridPane.columnIndex="1" GridPane.rowIndex="1"/>
 
     </GridPane>

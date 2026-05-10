@@ -19,6 +19,7 @@
         <Label text="Process Name:" GridPane.columnIndex="0" GridPane.rowIndex="0"
                styleClass="form-label"/>
         <TextField fx:id="tfName" text="P1" prefWidth="140"
+                   onAction="#onAdd"
                    GridPane.columnIndex="1" GridPane.rowIndex="0"/>
     </GridPane>
 
