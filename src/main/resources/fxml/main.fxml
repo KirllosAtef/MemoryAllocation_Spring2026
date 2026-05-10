@@ -2,7 +2,6 @@
 
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.control.*?>
-<?import javafx.scene.text.*?>
 <?import javafx.geometry.*?>
 
 <BorderPane xmlns="http://javafx.com/javafx/11"
@@ -25,98 +24,101 @@
         </HBox>
     </top>
 
-    <!-- ══ LEFT: MEMORY DIAGRAM ══ -->
+    <!-- ══ LEFT: PARTITION TABLES (stacked vertically) ══ -->
     <left>
-        <VBox styleClass="panel" prefWidth="320" spacing="0">
-            <HBox styleClass="panel-header" alignment="CENTER_LEFT">
-                <Label text="Memory Layout" style="-fx-font-weight: bold; -fx-text-fill: #1A1A2E;" />
+        <VBox styleClass="panel" prefWidth="390" minWidth="340" spacing="0">
+            <Label text="Partition Tables" styleClass="panel-header"/>
+            <Separator/>
+            <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS"
+                        styleClass="table-scroll" hbarPolicy="NEVER">
+                <VBox spacing="0">
+
+                    <!-- FREE HOLES -->
+                    <VBox styleClass="table-section">
+                        <Label text="Free Holes" styleClass="table-section-title"/>
+                        <TableView fx:id="freeTable" styleClass="data-table"
+                                   VBox.vgrow="ALWAYS" minHeight="120" prefHeight="160">
+                            <columns>
+                                <TableColumn fx:id="freeStart" text="Start"         prefWidth="110"/>
+                                <TableColumn fx:id="freeEnd"   text="End"           prefWidth="110"/>
+                                <TableColumn fx:id="freeSize"  text="Size (B)"      prefWidth="120"/>
+                            </columns>
+                            <placeholder><Label text="No free holes" styleClass="table-placeholder"/></placeholder>
+                        </TableView>
+                    </VBox>
+
+                    <Separator/>
+
+                    <!-- ALLOCATED BLOCKS -->
+                    <VBox styleClass="table-section">
+                        <Label text="Allocated Blocks" styleClass="table-section-title"/>
+                        <TableView fx:id="allocTable" styleClass="data-table"
+                                   VBox.vgrow="ALWAYS" minHeight="120" prefHeight="180">
+                            <columns>
+                                <TableColumn fx:id="allocProc"  text="Process" prefWidth="68"/>
+                                <TableColumn fx:id="allocSeg"   text="Segment" prefWidth="68"/>
+                                <TableColumn fx:id="allocStart" text="Start"   prefWidth="60"/>
+                                <TableColumn fx:id="allocEnd"   text="End"     prefWidth="60"/>
+                                <TableColumn fx:id="allocSize"  text="Size (B)" prefWidth="80"/>
+                            </columns>
+                            <placeholder><Label text="No allocated blocks" styleClass="table-placeholder"/></placeholder>
+                        </TableView>
+                    </VBox>
+
+                    <Separator/>
+
+                    <!-- SEGMENT TABLE -->
+                    <VBox styleClass="table-section">
+                        <Label text="Segment Table" styleClass="table-section-title"/>
+                        <HBox spacing="6" alignment="CENTER_LEFT" styleClass="seg-table-header">
+                            <Label text="Process:" styleClass="seg-label"/>
+                            <ComboBox fx:id="cbSegProcess" promptText="Select…" prefWidth="120"
+                                      onAction="#onSegProcessSelected" HBox.hgrow="ALWAYS"/>
+                            <Button text="Show" onAction="#onShowSegTable" styleClass="btn-info"/>
+                        </HBox>
+                        <TableView fx:id="segTable" styleClass="data-table"
+                                   VBox.vgrow="ALWAYS" minHeight="120" prefHeight="170">
+                            <columns>
+                                <TableColumn fx:id="segNum"  text="#"       prefWidth="34"/>
+                                <TableColumn fx:id="segName" text="Name"    prefWidth="76"/>
+                                <TableColumn fx:id="segBase" text="Base"    prefWidth="76"/>
+                                <TableColumn fx:id="segSz"   text="Size (B)" prefWidth="80"/>
+                                <TableColumn fx:id="segLim"  text="Limit"   prefWidth="76"/>
+                            </columns>
+                            <placeholder><Label text="Select a process" styleClass="table-placeholder"/></placeholder>
+                        </TableView>
+                    </VBox>
+
+                </VBox>
+            </ScrollPane>
+        </VBox>
+    </left>
+
+    <!-- ══ CENTRE: MEMORY DIAGRAM ══ -->
+    <center>
+        <VBox styleClass="panel" spacing="0">
+            <HBox styleClass="panel-header" alignment="CENTER_LEFT" spacing="8">
+                <Label text="Memory Layout" styleClass="panel-header-label"/>
                 <Region HBox.hgrow="ALWAYS"/>
-                <Button text="＋" onAction="#onZoomIn" style="-fx-padding: 2 6; -fx-font-size: 11px; -fx-cursor: hand;" />
-                <Region prefWidth="4" />
-                <Button text="－" onAction="#onZoomOut" style="-fx-padding: 2 6; -fx-font-size: 11px; -fx-cursor: hand;" />
+                <Button text="＋" onAction="#onZoomIn"  styleClass="zoom-btn"/>
+                <Button text="－" onAction="#onZoomOut" styleClass="zoom-btn"/>
+                <HBox.margin><Insets right="6"/></HBox.margin>
             </HBox>
             <Separator/>
             <ScrollPane fx:id="diagramScroll" fitToWidth="true" VBox.vgrow="ALWAYS"
                         styleClass="diagram-scroll" pannable="true">
                 <Pane fx:id="diagramPane" styleClass="diagram-pane" minHeight="500"/>
             </ScrollPane>
-            <!-- Stats strip -->
-            <HBox styleClass="stats-bar" spacing="0">
-                <Label fx:id="lblFree"  text="Free: —"  styleClass="stat-free"  HBox.hgrow="ALWAYS"/>
-                <Label fx:id="lblUsed"  text="Used: —"  styleClass="stat-used"  HBox.hgrow="ALWAYS"/>
-                <Label fx:id="lblTotal" text="Total: —" styleClass="stat-total" HBox.hgrow="ALWAYS"/>
-            </HBox>
-        </VBox>
-    </left>
-
-    <!-- ══ CENTRE: TABLES ══ -->
-    <center>
-        <VBox styleClass="panel" spacing="0">
-            <Label text="Partition Tables" styleClass="panel-header"/>
-            <Separator/>
-            <TabPane fx:id="tabPane" VBox.vgrow="ALWAYS" styleClass="main-tabs">
-
-                <!-- FREE HOLES -->
-                <Tab text="Free Holes" closable="false">
-                    <VBox spacing="0">
-                        <TableView fx:id="freeTable" VBox.vgrow="ALWAYS" styleClass="data-table">
-                            <columns>
-                                <TableColumn fx:id="freeStart" text="Start Address" prefWidth="110"/>
-                                <TableColumn fx:id="freeEnd"   text="End Address"   prefWidth="110"/>
-                                <TableColumn fx:id="freeSize"  text="Size (bytes)"  prefWidth="110"/>
-                            </columns>
-                            <placeholder><Label text="No free holes" styleClass="table-placeholder"/></placeholder>
-                        </TableView>
-                    </VBox>
-                </Tab>
-
-                <!-- ALLOCATED BLOCKS -->
-                <Tab text="Allocated Blocks" closable="false">
-                    <TableView fx:id="allocTable" VBox.vgrow="ALWAYS" styleClass="data-table">
-                        <columns>
-                            <TableColumn fx:id="allocProc" text="Process" prefWidth="80"/>
-                            <TableColumn fx:id="allocSeg"  text="Segment" prefWidth="80"/>
-                            <TableColumn fx:id="allocStart" text="Start"   prefWidth="70"/>
-                            <TableColumn fx:id="allocEnd"  text="End"     prefWidth="70"/>
-                            <TableColumn fx:id="allocSize" text="Size"    prefWidth="70"/>
-                        </columns>
-                        <placeholder><Label text="No allocated blocks" styleClass="table-placeholder"/></placeholder>
-                    </TableView>
-                </Tab>
-
-                <!-- SEGMENT TABLE -->
-                <Tab text="Segment Table" closable="false">
-                    <VBox spacing="6">
-                        <HBox spacing="8" styleClass="seg-table-header" alignment="CENTER_LEFT">
-                            <Label text="Process:" styleClass="seg-label"/>
-                            <ComboBox fx:id="cbSegProcess" promptText="Select process…" prefWidth="140"
-                                      onAction="#onSegProcessSelected"/>
-                            <Button text="Show Table" onAction="#onShowSegTable" styleClass="btn-info"/>
-                        </HBox>
-                        <TableView fx:id="segTable" VBox.vgrow="ALWAYS" styleClass="data-table">
-                            <columns>
-                                <TableColumn fx:id="segNum"  text="#"            prefWidth="40"/>
-                                <TableColumn fx:id="segName" text="Name"         prefWidth="90"/>
-                                <TableColumn fx:id="segBase" text="Base Address" prefWidth="110"/>
-                                <TableColumn fx:id="segSz"   text="Size"         prefWidth="80"/>
-                                <TableColumn fx:id="segLim"  text="Limit (End)"  prefWidth="100"/>
-                            </columns>
-                            <placeholder><Label text="Select a process to view its segment table" styleClass="table-placeholder"/></placeholder>
-                        </TableView>
-                    </VBox>
-                </Tab>
-
-            </TabPane>
         </VBox>
     </center>
 
-    <!-- ══ RIGHT: CONTROLS ══ -->
+    <!-- ══ RIGHT: CONTROLS + LOG ══ -->
     <right>
-        <VBox styleClass="panel control-panel" prefWidth="230" spacing="10">
+        <VBox styleClass="panel control-panel" prefWidth="270" minWidth="240" spacing="0">
             <Label text="Controls" styleClass="panel-header"/>
             <Separator/>
 
-            <!-- Init Memory -->
+            <!-- Memory Setup -->
             <VBox styleClass="control-section" spacing="6">
                 <Label text="MEMORY SETUP" styleClass="section-label"/>
                 <Button fx:id="btnInit" text="⚙ Initialise Memory" maxWidth="Infinity"
@@ -125,9 +127,10 @@
 
             <Separator styleClass="thin-sep"/>
 
-            <!-- Unit Selection -->
+            <!-- Unit -->
             <VBox styleClass="control-section" spacing="6">
                 <Label text="UNIT" styleClass="section-label"/>
+                <!-- ComboBox is typed Unit in controller; FXML just declares the node -->
                 <ComboBox fx:id="cbUnit" onAction="#onUnitChanged" maxWidth="Infinity"/>
             </VBox>
 
@@ -136,10 +139,8 @@
             <!-- Algorithm -->
             <VBox styleClass="control-section" spacing="6">
                 <Label text="ALGORITHM" styleClass="section-label"/>
-                <fx:define>
-                    <ToggleGroup fx:id="algGroup"/>
-                </fx:define>
-                <HBox spacing="6">
+                <fx:define><ToggleGroup fx:id="algGroup"/></fx:define>
+                <HBox spacing="10">
                     <RadioButton fx:id="rbFirstFit" text="First-Fit" toggleGroup="$algGroup"
                                  selected="true" styleClass="algo-radio"/>
                     <RadioButton fx:id="rbBestFit"  text="Best-Fit"  toggleGroup="$algGroup"
@@ -149,59 +150,59 @@
 
             <Separator styleClass="thin-sep"/>
 
-            <!-- Add Process -->
+            <!-- Processes -->
             <VBox styleClass="control-section" spacing="6">
                 <Label text="PROCESSES" styleClass="section-label"/>
                 <HBox spacing="4">
-                    <Button fx:id="btnAddProc" text="Add" maxWidth="Infinity" prefWidth="70" HBox.hgrow="ALWAYS"
-                            onAction="#onAddProcess" styleClass="btn-success"/>
-                    <Button text="Edit" maxWidth="Infinity" prefWidth="70" HBox.hgrow="ALWAYS"
-                            onAction="#onEditProcess" styleClass="btn-info"/>
-                    <Button text="Delete" maxWidth="Infinity" prefWidth="70" HBox.hgrow="ALWAYS"
+                    <Button text="Add"    maxWidth="Infinity" HBox.hgrow="ALWAYS"
+                            onAction="#onAddProcess"    styleClass="btn-success"/>
+                    <Button text="Edit"   maxWidth="Infinity" HBox.hgrow="ALWAYS"
+                            onAction="#onEditProcess"   styleClass="btn-info"/>
+                    <Button text="Delete" maxWidth="Infinity" HBox.hgrow="ALWAYS"
                             onAction="#onDeleteProcess" styleClass="btn-danger"/>
                 </HBox>
-                <ListView fx:id="processList" prefHeight="160" styleClass="process-list"/>
+                <ListView fx:id="processList" prefHeight="130" styleClass="process-list"/>
             </VBox>
 
             <Separator styleClass="thin-sep"/>
 
-            <!-- Allocate / Deallocate -->
+            <!-- Actions -->
             <VBox styleClass="control-section" spacing="6">
                 <Label text="ACTIONS" styleClass="section-label"/>
-                <Button fx:id="btnAllocate"   text="▶ Allocate Selected"   maxWidth="Infinity"
+                <Button text="▶  Allocate Selected"   maxWidth="Infinity"
                         onAction="#onAllocate"   styleClass="btn-accent"/>
-                <Button fx:id="btnDeallocate" text="◀ Deallocate Selected" maxWidth="Infinity"
+                <Button text="◀  Deallocate Selected" maxWidth="Infinity"
                         onAction="#onDeallocate" styleClass="btn-warn"/>
+            </VBox>
+
+            <Separator styleClass="thin-sep"/>
+
+            <!-- Legend -->
+            <VBox styleClass="control-section legend-box" spacing="5">
+                <Label text="LEGEND" styleClass="section-label"/>
+                <HBox spacing="7" alignment="CENTER_LEFT">
+                    <Pane styleClass="legend-free"  prefWidth="16" prefHeight="12"/>
+                    <Label text="Free Hole" styleClass="legend-text"/>
+                </HBox>
+                <HBox spacing="7" alignment="CENTER_LEFT">
+                    <Pane styleClass="legend-alloc" prefWidth="16" prefHeight="12"/>
+                    <Label text="Allocated Segment" styleClass="legend-text"/>
+                </HBox>
             </VBox>
 
             <Region VBox.vgrow="ALWAYS"/>
 
-            <!-- Legend -->
-            <VBox styleClass="legend-box" spacing="4">
-                <Label text="LEGEND" styleClass="section-label"/>
-                <HBox spacing="6" alignment="CENTER_LEFT">
-                    <Pane styleClass="legend-free" prefWidth="18" prefHeight="12"/>
-                    <Label text="Free Hole"/>
+            <!-- System Log -->
+            <VBox VBox.vgrow="ALWAYS" styleClass="log-outer" spacing="0">
+                <HBox alignment="CENTER_LEFT" spacing="8" styleClass="log-header">
+                    <Label text="System Log" styleClass="log-title"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Button text="Clear" onAction="#onClearLog" styleClass="btn-small"/>
                 </HBox>
-                <HBox spacing="6" alignment="CENTER_LEFT">
-                    <Pane styleClass="legend-alloc" prefWidth="18" prefHeight="12"/>
-                    <Label text="Allocated Segment"/>
-                </HBox>
+                <TextArea fx:id="logArea" editable="false" VBox.vgrow="ALWAYS"
+                          prefHeight="160" styleClass="log-area" wrapText="true"/>
             </VBox>
         </VBox>
     </right>
-
-    <!-- ══ BOTTOM: LOG ══ -->
-    <bottom>
-        <VBox styleClass="log-panel" prefHeight="130">
-            <HBox alignment="CENTER_LEFT" spacing="10" styleClass="log-header">
-                <Label text="System Log" styleClass="panel-header" style="-fx-padding: 4 0 4 0;"/>
-                <Region HBox.hgrow="ALWAYS"/>
-                <Button text="Clear" onAction="#onClearLog" styleClass="btn-small"/>
-            </HBox>
-            <TextArea fx:id="logArea" editable="false" VBox.vgrow="ALWAYS"
-                      styleClass="log-area" wrapText="true"/>
-        </VBox>
-    </bottom>
 
 </BorderPane>

@@ -14,12 +14,15 @@
     <Label text="Initialise Memory" styleClass="dialog-title"/>
     <Separator/>
 
-    <!-- Total size -->
+    <!-- Total size & Unit -->
     <GridPane hgap="12" vgap="8" styleClass="form-grid">
-        <Label fx:id="lblTotalSize" text="Total Memory Size (bytes):" GridPane.columnIndex="0" GridPane.rowIndex="0"
+        <Label fx:id="lblTotalSize" text="Total Memory Size:" GridPane.columnIndex="0" GridPane.rowIndex="0"
                styleClass="form-label"/>
         <TextField fx:id="tfTotalSize" text="1024" prefWidth="140"
                    GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+
+        <Label text="Unit:" GridPane.columnIndex="0" GridPane.rowIndex="1" styleClass="form-label"/>
+        <ComboBox fx:id="cbUnit" onAction="#onUnitChanged" prefWidth="100" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
     </GridPane>
 
     <!-- Holes table -->

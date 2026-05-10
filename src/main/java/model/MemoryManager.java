@@ -1,19 +1,22 @@
 package model;
 
 import javafx.collections.*;
-import java.util.*;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.LinkedHashMap;
+import java.util.Collections;
+import model.algorithm.AllocationStrategy;
+import model.algorithm.FirstFitStrategy;
+import model.service.SystemLogger;
 
 public class MemoryManager {
-
-    public enum Algorithm {
-        FIRST_FIT, BEST_FIT
-    }
 
     private final int totalMemory;
     private final ObservableList<MemoryPartition> freePartitions = FXCollections.observableArrayList();
     private final ObservableList<MemoryPartition> allocPartitions = FXCollections.observableArrayList();
     private final Map<String, Process> processes = new LinkedHashMap<>();
-    private Algorithm algorithm = Algorithm.FIRST_FIT;
+    private AllocationStrategy strategy = new FirstFitStrategy();
 
     public MemoryManager(int totalMemory) {
         this.totalMemory = totalMemory;
@@ -26,16 +29,16 @@ public class MemoryManager {
                     "Hole [" + start + ", " + (start + size - 1) + "] exceeds memory bounds (0-" + (totalMemory - 1)
                             + ")");
         freePartitions.add(new MemoryPartition(start, size));
-        FXCollections.sort(freePartitions);
+        Collections.sort(freePartitions);
     }
 
     // ── Config ─────────────────────────────────────────────────────────────
-    public void setAlgorithm(Algorithm a) {
-        algorithm = a;
+    public void setStrategy(AllocationStrategy s) {
+        strategy = s;
     }
 
-    public Algorithm getAlgorithm() {
-        return algorithm;
+    public AllocationStrategy getStrategy() {
+        return strategy;
     }
 
     // ── Processes ──────────────────────────────────────────────────────────
@@ -56,31 +59,30 @@ public class MemoryManager {
     }
 
     // ── Allocate ───────────────────────────────────────────────────────────
-    public List<String> allocate(String procName) {
+    public void allocate(String procName, SystemLogger logger) {
         Process proc = processes.get(procName);
-        List<String> log = new ArrayList<>();
         if (proc == null) {
-            log.add("ERROR: process not found");
-            return log;
+            logger.log("ERROR: process not found");
+            return;
         }
         if (proc.isAllocated()) {
-            log.add(procName + " is already allocated.");
-            return log;
+            logger.log(procName + " is already allocated.");
+            return;
         }
 
-        log.add("Allocating " + procName + " [" + algorithm + "]");
+        logger.log("Allocating " + procName + " [" + strategy.getName() + "]");
 
         // Tentative pass — deep-copy free list
-        List<MemoryPartition> tentative = deepCopyFree();
-        List<int[]> placements = new ArrayList<>();
+        java.util.List<MemoryPartition> tentative = deepCopyFree();
+        java.util.List<int[]> placements = new ArrayList<>();
 
         for (Segment seg : proc.getSegments()) {
-            int idx = findHole(tentative, seg.getSize());
+            int idx = strategy.findHole(tentative, seg.getSize());
             if (idx == -1) {
-                log.add("  ✗ Segment '" + seg.getName() + "' (size=" + seg.getSize() + ") — no hole fits.");
-                log.add("  ✗ " + procName + " NOT allocated (all-or-nothing policy).");
+                logger.log("  ✗ Segment '" + seg.getName() + "' (size=" + seg.getSize() + ") — no hole fits.");
+                logger.log("  ✗ " + procName + " NOT allocated (all-or-nothing policy).");
                 proc.setState(Process.State.FAILED);
-                return log;
+                return;
             }
             MemoryPartition h = tentative.get(idx);
             placements.add(new int[] { h.getStartAddress() });
@@ -99,30 +101,28 @@ public class MemoryManager {
             int base = placements.get(i)[0];
             seg.allocate(base);
             allocPartitions.add(new MemoryPartition(base, seg.getSize(), procName, seg.getName()));
-            log.add(String.format("  ✓ %s [%d – %d]", seg.getName(), base, base + seg.getSize() - 1));
+            logger.log(String.format("  ✓ %s [%d – %d]", seg.getName(), base, base + seg.getSize() - 1));
         }
 
         freePartitions.setAll(tentative);
-        FXCollections.sort(freePartitions);
-        FXCollections.sort(allocPartitions);
+        Collections.sort(freePartitions);
+        Collections.sort(allocPartitions);
         proc.setAllocated(true);
-        log.add("  ✓ " + procName + " fully allocated.");
-        return log;
+        logger.log("  ✓ " + procName + " fully allocated.");
     }
 
     // ── Deallocate ─────────────────────────────────────────────────────────
-    public List<String> deallocate(String procName) {
+    public void deallocate(String procName, SystemLogger logger) {
         Process proc = processes.get(procName);
-        List<String> log = new ArrayList<>();
         if (proc == null || !proc.isAllocated()) {
-            log.add(procName + " is not currently allocated.");
-            return log;
+            logger.log(procName + " is not currently allocated.");
+            return;
         }
-        log.add("Deallocating " + procName);
+        logger.log("Deallocating " + procName);
 
         allocPartitions.removeIf(ap -> {
             if (ap.getProcessName().equals(procName)) {
-                log.add(String.format("  freed [%d – %d] (%s)", ap.getStartAddress(), ap.getEndAddress(),
+                logger.log(String.format("  freed [%d – %d] (%s)", ap.getStartAddress(), ap.getEndAddress(),
                         ap.getSegmentName()));
                 freePartitions.add(new MemoryPartition(ap.getStartAddress(), ap.getSize()));
                 return true;
@@ -133,32 +133,13 @@ public class MemoryManager {
         proc.deallocateAll();
         proc.setAllocated(false);
         mergeHoles();
-        log.add("  Holes merged → " + freePartitions.size() + " hole(s) remain.");
-        return log;
+        logger.log("  Holes merged → " + freePartitions.size() + " hole(s) remain.");
     }
 
     // ── Helpers ────────────────────────────────────────────────────────────
-    private int findHole(List<MemoryPartition> holes, int size) {
-        if (algorithm == Algorithm.FIRST_FIT) {
-            for (int i = 0; i < holes.size(); i++)
-                if (holes.get(i).getSize() >= size)
-                    return i;
-        } else {
-            int best = -1, bestSz = Integer.MAX_VALUE;
-            for (int i = 0; i < holes.size(); i++) {
-                int hs = holes.get(i).getSize();
-                if (hs >= size && hs < bestSz) {
-                    best = i;
-                    bestSz = hs;
-                }
-            }
-            return best;
-        }
-        return -1;
-    }
 
     private void mergeHoles() {
-        FXCollections.sort(freePartitions);
+        Collections.sort(freePartitions);
         boolean merged = true;
         while (merged) {
             merged = false;
@@ -176,8 +157,8 @@ public class MemoryManager {
         }
     }
 
-    private List<MemoryPartition> deepCopyFree() {
-        List<MemoryPartition> copy = new ArrayList<>();
+    private java.util.List<MemoryPartition> deepCopyFree() {
+        java.util.List<MemoryPartition> copy = new ArrayList<>();
         for (MemoryPartition p : freePartitions)
             copy.add(new MemoryPartition(p.getStartAddress(), p.getSize()));
         Collections.sort(copy);
@@ -205,8 +186,8 @@ public class MemoryManager {
         return allocPartitions.stream().mapToInt(MemoryPartition::getSize).sum();
     }
 
-    public List<MemoryPartition> getAllSorted() {
-        List<MemoryPartition> all = new ArrayList<>();
+    public java.util.List<MemoryPartition> getAllSorted() {
+        java.util.List<MemoryPartition> all = new ArrayList<>();
         all.addAll(freePartitions);
         all.addAll(allocPartitions);
         Collections.sort(all);

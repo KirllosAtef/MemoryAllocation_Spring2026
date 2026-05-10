@@ -4,50 +4,72 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.*;
 import javafx.fxml.*;
 import javafx.scene.control.*;
-import javafx.scene.control.cell.TextFieldTableCell;
+import view.util.EditCell;
 import javafx.stage.Stage;
+import model.service.UnitConverter;
+
 import java.util.*;
 
+/**
+ * Controller for the "Add / Edit Process" dialog (addProcess.fxml).
+ *
+ * SRP: only responsible for collecting process name + segment data.
+ * Unit label is provided by the injected UnitConverter — no static coupling.
+ */
 public class AddProcessController {
 
-    @FXML private TextField tfName;
-    @FXML private TableView<String[]>   segTable;
+    @FXML private TextField                     tfName;
+    @FXML private TableView<String[]>           segTable;
     @FXML private TableColumn<String[], String> colSegName, colSegSize;
 
     private final ObservableList<String[]> rows = FXCollections.observableArrayList();
-    private boolean confirmed = false;
-    private String procName;
+    private boolean      confirmed = false;
+    private String       procName;
     private final List<String[]> segments = new ArrayList<>();
 
+    // ── Injected by MainController ─────────────────────────────────────────
+    private UnitConverter units;
+
+    public void setUnitConverter(UnitConverter units) {
+        this.units = units;
+        updateLabels();
+    }
+
+    /** Pre-populate the dialog for editing an existing process. */
     public void initData(String name, List<String[]> existingSegments) {
-        tfName.setText(name);
+        if (tfName != null) tfName.setText(name);
         rows.clear();
-        for (String[] seg : existingSegments) {
-            rows.add(new String[]{seg[0], seg[1]});
-        }
+        for (String[] seg : existingSegments) rows.add(new String[]{seg[0], seg[1]});
     }
 
     @FXML
     public void initialize() {
-        colSegSize.setText("Size (" + MainController.CURRENT_UNIT + ")");
+        updateLabels();
+
         segTable.setItems(rows);
         segTable.setEditable(true);
+        segTable.getSelectionModel().setCellSelectionEnabled(true);
 
         colSegName.setCellValueFactory(cd -> new SimpleStringProperty(cd.getValue()[0]));
         colSegSize.setCellValueFactory(cd -> new SimpleStringProperty(cd.getValue()[1]));
-
-        colSegName.setCellFactory(TextFieldTableCell.forTableColumn());
-        colSegSize.setCellFactory(TextFieldTableCell.forTableColumn());
-
+        colSegName.setCellFactory(EditCell.forTableColumn());
+        colSegSize.setCellFactory(EditCell.forTableColumn());
         colSegName.setOnEditCommit(e -> e.getRowValue()[0] = e.getNewValue());
         colSegSize.setOnEditCommit(e -> e.getRowValue()[1] = e.getNewValue());
 
-        // Default example
-        rows.addAll(
-            new String[]{"Code",  "50"},
-            new String[]{"Data",  "200"},
-            new String[]{"Stack", "100"}
-        );
+        // Default rows only when table is empty (i.e., not pre-populated by initData)
+        if (rows.isEmpty()) {
+            rows.addAll(
+                new String[]{"Code",  "50"},
+                new String[]{"Data",  "200"},
+                new String[]{"Stack", "100"}
+            );
+        }
+    }
+
+    private void updateLabels() {
+        String lbl = units != null ? units.label() : "B";
+        if (colSegSize != null) colSegSize.setText("Size (" + lbl + ")");
     }
 
     @FXML private void onAddRow()    { rows.add(new String[]{"Segment", "0"}); }

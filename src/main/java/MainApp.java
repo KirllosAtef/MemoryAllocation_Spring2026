@@ -11,7 +11,7 @@ public class MainApp extends Application {
         Parent root = loader.load();
 
         Scene scene = new Scene(root, 1280, 780);
-        stage.setTitle("Memory Allocation Simulator — Segmentation (JavaFX / FXML)");
+        stage.setTitle("Memory Allocation Simulator");
         stage.setScene(scene);
         stage.setMinWidth(960);
         stage.setMinHeight(640);
