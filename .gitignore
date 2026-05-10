@@ -10,3 +10,5 @@ dependency-reduced-pom.xml
 # User requested exclusions
 srcOld/
 INTELLIJ_SETUP.txt
+build_exe.ps1
+dist/
