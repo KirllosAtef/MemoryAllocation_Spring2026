@@ -42,7 +42,6 @@ public class MemoryDiagramBuilder {
         canvas.widthProperty().bind(pane.widthProperty());
         
         pane.widthProperty().addListener((obs, oldVal, newVal) -> redraw(this.lastMm));
-        pane.heightProperty().addListener((obs, oldVal, newVal) -> redraw(this.lastMm));
     }
 
     public void zoomIn()  { scale = Math.min(scale * 1.25, 5.0); redraw(this.lastMm); }

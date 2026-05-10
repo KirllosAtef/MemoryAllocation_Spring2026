@@ -216,10 +216,9 @@ public class MainController {
                 mm.addInitialHole((int) h[0], (int) h[1]);
             }
 
-            // Preserve unallocated processes across re-init
+            // Preserve all processes across re-init (reset to PENDING)
             if (oldMm != null) {
                 for (model.Process oldP : oldMm.getProcesses().values()) {
-                    if (oldP.isAllocated()) continue;
                     model.Process newP = new model.Process(oldP.getName());
                     newP.setColor(oldP.getColor());
                     for (Segment s : oldP.getSegments())
